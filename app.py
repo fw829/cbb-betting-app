@@ -7,24 +7,24 @@ import matplotlib.pyplot as plt
 @st.cache_data
 def get_data(team, season, spread_range, tempo_range, adj_o_range, adj_d_range, fg3_range):
     conn = sqlite3.connect("basketball_data.db")
-    
+
     # Start SQL query
     query = "SELECT * FROM games WHERE 1=1"
 
-    # Ensure string values are properly formatted
     if team != "All Teams":
         query += f" AND TEAM = '{team}'"
     if season != "All Seasons":
-        query += f" AND Season = '{season}'"  # Ensure season is treated as a string
+        query += f" AND Season = '{season}'"
     
-    # Ensure numeric values are cast correctly
     query += f" AND CLOSING_SPREAD BETWEEN {int(spread_range[0])} AND {int(spread_range[1])}"
     query += f" AND AdjTempo BETWEEN {float(tempo_range[0])} AND {float(tempo_range[1])}"
     query += f" AND AdjO BETWEEN {float(adj_o_range[0])} AND {float(adj_o_range[1])}"
     query += f" AND AdjD BETWEEN {float(adj_d_range[0])} AND {float(adj_d_range[1])}"
     query += f" AND FG3Pct BETWEEN {float(fg3_range[0])} AND {float(fg3_range[1])}"
 
-    # Execute query
+    # **LIMIT rows returned to reduce memory usage**
+    query += " LIMIT 500"
+
     df = pd.read_sql(query, conn)
     conn.close()
     return df
