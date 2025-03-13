@@ -1,4 +1,8 @@
 import streamlit as st
+
+# Force clear cache
+st.cache_data.clear()
+
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
