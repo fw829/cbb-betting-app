@@ -4,31 +4,36 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Function to connect to the database and fetch data (with caching)
-@st.cache_data
 def get_data(team, season, spread_range, tempo_range, adj_o_range, adj_d_range, fg3_range):
     conn = sqlite3.connect("basketball_data.db")
 
     # Start SQL query
     query = "SELECT * FROM games WHERE 1=1"
 
+    # Ensure string values are properly formatted
     if team != "All Teams":
         query += f" AND TEAM = '{team}'"
     if season != "All Seasons":
-        query += f" AND Season = '{season}'"
-    
+        query += f" AND Season = '{season}'"  # Treating season as a string
+
+    # Ensure numeric values are cast correctly
     query += f" AND CLOSING_SPREAD BETWEEN {int(spread_range[0])} AND {int(spread_range[1])}"
     query += f" AND AdjTempo BETWEEN {float(tempo_range[0])} AND {float(tempo_range[1])}"
     query += f" AND AdjO BETWEEN {float(adj_o_range[0])} AND {float(adj_o_range[1])}"
     query += f" AND AdjD BETWEEN {float(adj_d_range[0])} AND {float(adj_d_range[1])}"
     query += f" AND FG3Pct BETWEEN {float(fg3_range[0])} AND {float(fg3_range[1])}"
 
-    # **LIMIT rows returned to reduce memory usage**
-    query += " LIMIT 500"
+    # **Debugging: Print query to check for issues**
+    print("SQL Query:", query)
 
-    df = pd.read_sql(query, conn)
+    try:
+        df = pd.read_sql(query, conn)
+    except Exception as e:
+        st.error(f"SQL Query Failed: {e}")
+        df = pd.DataFrame()  # Return empty DataFrame on failure
+
     conn.close()
     return df
-
 st.title("College Basketball Betting Analysis")
 
 # Fetch available teams & seasons (caching this too)
