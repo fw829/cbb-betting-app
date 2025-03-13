@@ -19,8 +19,8 @@ def get_data(team, season, spread_range, tempo_range, adj_o_range, adj_d_range, 
     # Ensure numeric values are cast correctly
     query += f" AND CLOSING_SPREAD BETWEEN {int(spread_range[0])} AND {int(spread_range[1])}"
     query += f" AND AdjTempo BETWEEN {float(tempo_range[0])} AND {float(tempo_range[1])}"
-    query += f" AND AdjO BETWEEN {float(adj_o_range[0])} AND {float(adj_o_range[1])}"
-    query += f" AND AdjD BETWEEN {float(adj_d_range[0])} AND {float(adj_d_range[1])}"
+    query += f" AND AdjOE BETWEEN {float(adj_o_range[0])} AND {float(adj_o_range[1])}"
+    query += f" AND AdjDE BETWEEN {float(adj_d_range[0])} AND {float(adj_d_range[1])}"
     query += f" AND FG3Pct BETWEEN {float(fg3_range[0])} AND {float(fg3_range[1])}"
 
     # **Debugging: Print query to check for issues**
@@ -52,8 +52,8 @@ selected_team = st.selectbox("Select a Team", ["All Teams"] + teams)
 selected_season = st.selectbox("Select a Season", ["All Seasons"] + [str(s) for s in seasons])
 spread_range = st.slider("Filter by Closing Spread", -25, 25, (-25, 25))
 tempo_range = st.slider("Filter by Tempo (AdjTempo)", 50, 80, (50, 80))
-adj_o_range = st.slider("Filter by Offensive Efficiency (AdjO)", 80, 130, (80, 130))
-adj_d_range = st.slider("Filter by Defensive Efficiency (AdjD)", 80, 130, (80, 130))
+adj_o_range = st.slider("Filter by Offensive Efficiency (AdjOE)", 80, 130, (80, 130))
+adj_d_range = st.slider("Filter by Defensive Efficiency (AdjDE)", 80, 130, (80, 130))
 fg3_range = st.slider("Filter by 3PT % (FG3Pct)", 25, 45, (25, 45))
 
 # Fetch Data (Uses Caching)
