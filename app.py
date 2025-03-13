@@ -5,18 +5,23 @@ import matplotlib.pyplot as plt
 
 # Function to connect to the database and fetch data (with caching)
 @st.cache_data
-def get_data(team, season, spread_range):
-    conn = sqlite3.connect("basketball_data.db")  # Open connection
+def get_data(team, season, spread_range, tempo_range, adj_o_range, adj_d_range, fg3_range):
+    conn = sqlite3.connect("basketball_data.db")  
     query = "SELECT * FROM games WHERE 1=1"
 
     if team != "All Teams":
         query += f" AND TEAM = '{team}'"
     if season != "All Seasons":
         query += f" AND Season = {season}"
+    
     query += f" AND CLOSING_SPREAD BETWEEN {spread_range[0]} AND {spread_range[1]}"
-
+    query += f" AND AdjTempo BETWEEN {tempo_range[0]} AND {tempo_range[1]}"
+    query += f" AND AdjO BETWEEN {adj_o_range[0]} AND {adj_o_range[1]}"
+    query += f" AND AdjD BETWEEN {adj_d_range[0]} AND {adj_d_range[1]}"
+    query += f" AND FG3Pct BETWEEN {fg3_range[0]} AND {fg3_range[1]}"
+    
     df = pd.read_sql(query, conn)
-    conn.close()  # Close connection after fetching data
+    conn.close()  
     return df
 
 st.title("College Basketball Betting Analysis")
@@ -36,9 +41,13 @@ teams, seasons = get_teams_and_seasons()
 selected_team = st.selectbox("Select a Team", ["All Teams"] + teams)
 selected_season = st.selectbox("Select a Season", ["All Seasons"] + [str(s) for s in seasons])
 spread_range = st.slider("Filter by Closing Spread", -25, 25, (-25, 25))
+tempo_range = st.slider("Filter by Tempo (AdjTempo)", 50, 80, (50, 80))
+adj_o_range = st.slider("Filter by Offensive Efficiency (AdjO)", 80, 130, (80, 130))
+adj_d_range = st.slider("Filter by Defensive Efficiency (AdjD)", 80, 130, (80, 130))
+fg3_range = st.slider("Filter by 3PT % (FG3Pct)", 25, 45, (25, 45))
 
 # Fetch Data (Uses Caching)
-df = get_data(selected_team, selected_season, spread_range)
+df = get_data(selected_team, selected_season, spread_range, tempo_range, adj_o_range, adj_d_range, fg3_range)
 
 # Cover % Calculation
 if not df.empty:
