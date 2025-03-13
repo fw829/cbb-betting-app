@@ -3,31 +3,42 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Database connection
-DB_PATH = "basketball_data.db"
-conn = sqlite3.connect(DB_PATH)
+# Function to connect to the database and fetch data (with caching)
+@st.cache_data
+def get_data(team, season, spread_range):
+    conn = sqlite3.connect("basketball_data.db")  # Open connection
+    query = "SELECT * FROM games WHERE 1=1"
+
+    if team != "All Teams":
+        query += f" AND TEAM = '{team}'"
+    if season != "All Seasons":
+        query += f" AND Season = {season}"
+    query += f" AND CLOSING_SPREAD BETWEEN {spread_range[0]} AND {spread_range[1]}"
+
+    df = pd.read_sql(query, conn)
+    conn.close()  # Close connection after fetching data
+    return df
 
 st.title("College Basketball Betting Analysis")
 
-# Fetch available teams & seasons
-teams = pd.read_sql("SELECT DISTINCT TEAM FROM games ORDER BY TEAM", conn)['TEAM'].tolist()
-seasons = pd.read_sql("SELECT DISTINCT Season FROM games ORDER BY Season DESC", conn)['Season'].tolist()
+# Fetch available teams & seasons (caching this too)
+@st.cache_data
+def get_teams_and_seasons():
+    conn = sqlite3.connect("basketball_data.db")
+    teams = pd.read_sql("SELECT DISTINCT TEAM FROM games ORDER BY TEAM", conn)['TEAM'].tolist()
+    seasons = pd.read_sql("SELECT DISTINCT Season FROM games ORDER BY Season DESC", conn)['Season'].tolist()
+    conn.close()
+    return teams, seasons
 
-# User Inputs: Filters
+teams, seasons = get_teams_and_seasons()
+
+# User Inputs
 selected_team = st.selectbox("Select a Team", ["All Teams"] + teams)
 selected_season = st.selectbox("Select a Season", ["All Seasons"] + [str(s) for s in seasons])
 spread_range = st.slider("Filter by Closing Spread", -25, 25, (-25, 25))
 
-# Build the Query with Filters
-query = "SELECT * FROM games WHERE 1=1"
-if selected_team != "All Teams":
-    query += f" AND TEAM = '{selected_team}'"
-if selected_season != "All Seasons":
-    query += f" AND Season = {selected_season}"
-query += f" AND CLOSING_SPREAD BETWEEN {spread_range[0]} AND {spread_range[1]}"
-
-# Fetch Data
-df = pd.read_sql(query, conn)
+# Fetch Data (Uses Caching)
+df = get_data(selected_team, selected_season, spread_range)
 
 # Cover % Calculation
 if not df.empty:
@@ -66,7 +77,7 @@ if not df.empty:
 
     # Convert to DataFrame for Chart
     bucket_df = pd.DataFrame(bucket_data, columns=["Spread Range", "Cover %"])
-    
+
     # Plot Cover % by Spread Bucket
     fig, ax = plt.subplots()
     ax.bar(bucket_df["Spread Range"], bucket_df["Cover %"], color="blue")
@@ -80,6 +91,3 @@ if not df.empty:
 
 else:
     st.write("No games found for selected filters.")
-
-# Close Connection
-conn.close()
