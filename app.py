@@ -3,9 +3,10 @@ import sqlite3
 import pandas as pd
 import os
 
-DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
+# ✅ Force Streamlit to use the correct database path
+DB_PATH = r"C:\Users\Frank W\Desktop\fixed_basketball_data.db"
 
-# ✅ Check if the database file exists and is not empty
+# ✅ Debugging: Check if the database file exists and is accessible
 if not os.path.exists(DB_PATH):
     st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
     st.stop()
@@ -13,14 +14,17 @@ else:
     file_size = os.path.getsize(DB_PATH)  # Get database size in bytes
     st.success(f"✅ Database found at: {DB_PATH} (Size: {file_size} bytes)")
 
-# ✅ Test connection with "immutable=1" to prevent SQLite from making a temp copy
+# ✅ Force Streamlit to open a fresh database connection
+def get_db_connection():
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
+
 try:
-    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)  # Read-Only mode
+    conn = get_db_connection()
     cursor = conn.cursor()
 
+    # ✅ Explicitly check tables
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = [table[0] for table in cursor.fetchall()]
-
     st.write("🔎 Tables in Database:", tables)
 
     if "games" in tables:
@@ -35,6 +39,7 @@ try:
 except Exception as e:
     st.error(f"❌ Database Connection Error: {e}")
     st.stop()
+
 # ✅ Define Offense-Defense stat pairs
 STAT_PAIRS = {
     "AdjOE": "AdjDE",
