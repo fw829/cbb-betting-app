@@ -3,33 +3,36 @@ import sqlite3
 import pandas as pd
 import os
 
-# ✅ Database Path
+# ✅ Explicitly define the absolute database path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
-# ✅ Database Path (Ensure it's correct)
-DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
-
-# ✅ Check if the database file exists
+# ✅ Debugging: Confirm that Streamlit is accessing the right file
 if not os.path.exists(DB_PATH):
-    st.error(f"❌ Database file NOT FOUND at: {DB_PATH}")
+    st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
     st.stop()
 else:
     st.success(f"✅ Database found at: {DB_PATH}")
 
-# ✅ Verify the connection inside Streamlit
+# ✅ Debug: Test Connection Inside Streamlit
 try:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
+    # ✅ Check if 'games' table exists
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = [table[0] for table in cursor.fetchall()]
-    conn.close()
-
+    
     st.write("🔎 Tables in Database:", tables)
-    if "games" not in tables:
-        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
-        st.stop()
+
+    # ✅ Check if 'games' table contains data
+    if "games" in tables:
+        cursor.execute("SELECT COUNT(*) FROM games;")
+        row_count = cursor.fetchone()[0]
+        st.success(f"✅ 'games' table found with {row_count} rows!")
     else:
-        st.success("✅ 'games' table found in the database!")
+        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
+
+    conn.close()
 
 except Exception as e:
     st.error(f"❌ Database Connection Error: {e}")
