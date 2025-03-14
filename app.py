@@ -32,9 +32,50 @@ filterable_stats = ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "OppFG2Pct", "OppFG3Pc
 # Function to fetch data with or without Offense-Defense comparisons
 @st.cache_data
 def get_data(compare_vs_opponent, selected_stat, filters):
-    conn = sqlite3.connect("basketball_data.db")
+    conn = sqlite3.connect(db_path)
 
     # Determine if selected_stat has a defensive pair
+    opponent_stat = stat_pairs.get(selected_stat, None)
+
+    if not compare_vs_opponent or opponent_stat is None:
+        query = f"""
+            SELECT GAME_ID, TEAM, {selected_stat}, CLOSING_SPREAD, Covered_Spread
+            FROM games
+            WHERE 1=1
+        """
+    else:
+        query = f"""
+            SELECT g1.GAME_ID, g1.TEAM, g1.{selected_stat} AS Team_Stat, 
+                   g2.TEAM AS Opponent, g2.{opponent_stat} AS Opponent_Stat,
+                   g1.CLOSING_SPREAD, g1.Covered_Spread
+            FROM games g1
+            JOIN games g2 ON g1.GAME_ID = g2.GAME_ID 
+            WHERE g1.TEAM <> g2.TEAM
+        """
+
+    # ✅ FIX: Filters are now inside `get_data()`
+    for stat, value in filters.items():
+        if value is not None:
+            if compare_vs_opponent:
+                query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
+            else:
+                query += f" AND {stat} BETWEEN {value[0]} AND {value[1]}"
+
+    # Debugging Output: Print the final SQL query
+    print("Executing SQL Query:", query)
+
+    try:
+        df = pd.read_sql(query, conn)
+    except Exception as e:
+        st.error(f"🚨 SQL Query Failed: {e}")
+        st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
+        df = pd.DataFrame()  # Return an empty DataFrame on failure
+    finally:
+        conn.close()  # Ensure the database connection is closed
+
+    return df  # ✅ Now correctly inside the function
+
+ # Determine if selected_stat has a defensive pair
     opponent_stat = stat_pairs.get(selected_stat, None)
 
     if not compare_vs_opponent or opponent_stat is None:
@@ -65,7 +106,7 @@ for stat, value in filters.items():
 
 try:
     print("Executing SQL Query:", query)  # Debugging Output
-    df = pd.read_sql(query, conn)
+   
 except Exception as e:
     st.error(f"🚨 SQL Query Failed: {e}")
     st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
