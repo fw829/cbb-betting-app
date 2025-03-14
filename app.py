@@ -21,7 +21,7 @@ def get_data(filters, paired_filters):
     # ✅ Base Query
     query = """
         SELECT g1.GAME_ID, g1.TEAM, g1.AdjOE, g1.AdjDE, g1.FG2Pct, g1.FG3Pct, g1.ARate, g1.AdjTempo,
-               g2.TEAM AS Opponent, g2.AdjDE AS OppAdjDE, g2.OppFG2Pct, g2.OppFG3Pct, g2.OppARate
+               g2.TEAM AS Opponent, g2.AdjDE, g2.OppFG2Pct, g2.OppFG3Pct, g2.OppARate
         FROM games g1
         JOIN games g2 ON g1.GAME_ID = g2.GAME_ID
         WHERE g1.TEAM <> g2.TEAM
@@ -34,15 +34,26 @@ def get_data(filters, paired_filters):
 
     # ✅ Apply Opponent Filters (If Enabled)
     for stat, value in paired_filters.items():
-        conditions.append(f"g2.{stat} BETWEEN {value[0]} AND {value[1]}")
+        if stat in ["AdjDE", "OppFG2Pct", "OppFG3Pct", "OppARate"]:  # Ensure the column exists
+            conditions.append(f"g2.{stat} BETWEEN {value[0]} AND {value[1]}")
 
     # ✅ Add Conditions to SQL Query
     if conditions:
         query += " AND " + " AND ".join(conditions)
 
-    df = pd.read_sql(query, conn)
-    conn.close()
+    print("Executing SQL Query:", query)  # Debugging Output
+
+    try:
+        df = pd.read_sql(query, conn)
+    except Exception as e:
+        st.error(f"🚨 SQL Query Failed: {e}")
+        st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
+        df = pd.DataFrame()  # Return an empty DataFrame on failure
+    finally:
+        conn.close()
+
     return df
+
 
 # ✅ Streamlit UI
 st.title("College Basketball Betting Analysis")
