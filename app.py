@@ -14,7 +14,7 @@ st.write(f"🔍 Checking database path: {DB_PATH}")
 if not os.path.exists(DB_PATH):
     st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
 
-# ✅ Function to connect to the database
+# Function to connect to the database
 def get_db_connection():
     try:
         if not os.path.exists(DB_PATH):
@@ -23,20 +23,22 @@ def get_db_connection():
         
         conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         st.write("✅ Successfully connected to database")
+        
+        # Debugging: Check if 'games' table exists
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        table_names = [table[0] for table in tables]
+        st.write(f"🔎 Tables in Database: {table_names}")
+        
+        if "games" not in table_names:
+            st.error("❌ ERROR: 'games' table does NOT exist in the database!")
+            return None
+        
         return conn
     except Exception as e:
         st.error(f"❌ Database Connection Failed: {e}")
         return None
-
-# ✅ Manual Test: Confirm database connection and table access
-conn_test = get_db_connection()
-if conn_test:
-    try:
-        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table';", conn_test)
-        st.write("📌 Tables in Database:", tables)
-        conn_test.close()
-    except Exception as e:
-        st.error(f"🚨 Table Check Failed: {e}")
 
 # Define stat pairs for Offense vs Defense comparison
 STAT_PAIRS = {
@@ -62,7 +64,7 @@ for off_stat, def_stat in STAT_PAIRS.items():
     if enable_pair:
         paired_filters[def_stat] = st.sidebar.slider(f"{def_stat} Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_{def_stat}")
 
-# ✅ Function to load data based on filters
+# Function to load data based on filters
 def get_data(filters, paired_filters):
     conn = get_db_connection()
     if conn is None:
@@ -91,7 +93,7 @@ def get_data(filters, paired_filters):
         st.code(query, language="sql")
         return pd.DataFrame()
 
-# ✅ Load data
+# Load data
 st.write("### Filtered Data View")
 df = get_data(filters, paired_filters)
 st.dataframe(df)
