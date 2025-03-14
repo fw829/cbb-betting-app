@@ -3,11 +3,21 @@ import pandas as pd
 import sqlite3
 import os
 
+conn = get_db_connection()
+if conn:
+    try:
+        df_test = pd.read_sql("SELECT * FROM games LIMIT 5;", conn)
+        st.write("✅ Test query successful!", df_test)
+    except Exception as e:
+        st.error(f"❌ Test query failed: {e}")
+    finally:
+        conn.close()
+
 # Debugging: Show working directory & confirm DB path
 st.write("📂 Current working directory:", os.getcwd())
 
 # Ensure database path is absolute
-DB_PATH = "C:/Users/Frank W/OneDrive/Desktop/College Basketball Wagering/Database/basketball_data.db"
+DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 st.write(f"🔍 Checking database path: {DB_PATH}")
 
 # Ensure the file exists before attempting to connect
