@@ -4,28 +4,28 @@ import sqlite3
 import os
 
 # Debugging: Show working directory & confirm DB path
-st.write("\ud83d\udcc2 Current working directory:", os.getcwd())
+st.write("📂 Current working directory:", os.getcwd())
 
 # Ensure database path is absolute
 DB_PATH = "C:/Users/Frank W/OneDrive/Desktop/College Basketball Wagering/Database/basketball_data.db"
-st.write(f"\ud83d\udd0e Checking database path: {DB_PATH}")
+st.write(f"🔍 Checking database path: {DB_PATH}")
 
 # Ensure the file exists before attempting to connect
 if not os.path.exists(DB_PATH):
-    st.error(f"\u274c ERROR: Database file NOT FOUND at: {DB_PATH}")
+    st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
 
 # Function to connect to the database
 def get_db_connection():
     try:
         if not os.path.exists(DB_PATH):
-            st.error(f"\u274c ERROR: Database file NOT FOUND at: {DB_PATH}")
+            st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
             return None
         
         conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        st.write("\u2705 Successfully connected to database")
+        st.write("✅ Successfully connected to database")
         return conn
     except Exception as e:
-        st.error(f"\u274c Database Connection Failed: {e}")
+        st.error(f"❌ Database Connection Failed: {e}")
         return None
 
 # Define stat pairs for Offense vs Defense comparison
@@ -77,7 +77,7 @@ def get_data(filters, paired_filters):
         conn.close()
         return df
     except Exception as e:
-        st.error(f"\ud83d\udea8 SQL Query Failed: {e}")
+        st.error(f"🚨 SQL Query Failed: {e}")
         st.code(query, language="sql")
         return pd.DataFrame()
 
