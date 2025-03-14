@@ -23,20 +23,14 @@ conn.close()
 try:
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # ✅ Explicitly check tables
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [table[0] for table in cursor.fetchall()]
-    st.write("🔎 Tables in Database:", tables)
-
-    if "games" in tables:
-        cursor.execute("SELECT COUNT(*) FROM games;")
-        row_count = cursor.fetchone()[0]
-        st.success(f"✅ 'games' table found with {row_count} rows!")
-    else:
-        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
-
-# ✅ Step 2: Debugging - Show Available Columns in 'games' Table
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='games';")
+    result = cursor.fetchone()
+    if not result:
+        raise ValueError("❌ ERROR: 'games' table does NOT exist in the database!")
+    cursor.close()
+    conn.close()
+except Exception as e:
+    st.error(f"🚨 Database Connection Failed: {e}")# ✅ Step 2: Debugging - Show Available Columns in 'games' Table
 try:
     conn = get_db_connection()
     cursor = conn.cursor()
