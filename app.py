@@ -6,6 +6,9 @@ import os
 # Display current working directory for debugging
 st.write("Current working directory:", os.getcwd())
 
+# Set database path
+DB_PATH = r"C:\\Users\\Frank W\\OneDrive\\Desktop\\College Basketball Wagering\\Database\\basketball_data.db"
+
 # Define database connection function
 def get_db_connection():
     try:
@@ -14,9 +17,6 @@ def get_db_connection():
     except Exception as e:
         st.error(f"❌ Database Connection Failed: {e}")
         return None
-
-# Set database path
-DB_PATH = r"C:\\Users\\Frank W\\OneDrive\\Desktop\\College Basketball Wagering\\Database\\basketball_data.db"
 
 # Define stat pairs for Offense vs Defense comparison
 STAT_PAIRS = {
@@ -49,11 +49,10 @@ def get_data(filters, paired_filters):
         return pd.DataFrame()
     
     query = f"""
-        ATTACH DATABASE '{DB_PATH}' AS db;
         SELECT g1.GAME_ID, g1.TEAM, g1.AdjOE, g1.AdjDE, g1.FG2Pct, g1.FG3Pct, g1.ARate, g1.AdjTempo,
                g2.TEAM AS Opponent, g2.AdjDE AS OppAdjDE, g2.FG2Pct AS OppFG2Pct, g2.FG3Pct AS OppFG3Pct, g2.ARate AS OppARate
-        FROM db.games g1
-        JOIN db.games g2 ON g1.GAME_ID = g2.GAME_ID
+        FROM games g1
+        JOIN games g2 ON g1.GAME_ID = g2.GAME_ID
         WHERE g1.TEAM <> g2.TEAM
     """
 
