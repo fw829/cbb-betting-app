@@ -30,21 +30,6 @@ try:
     else:
         st.error("❌ ERROR: 'games' table does NOT exist in the database!")
 
-# ✅ Step 2: Debugging - Show Available Columns in 'games' Table
-try:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("PRAGMA table_info(games);")
-    columns = [col[1] for col in cursor.fetchall()]
-    
-    st.write("🔎 Columns in 'games' table:", columns)
-
-except Exception as e:
-    st.error(f"❌ ERROR: Could not retrieve columns from 'games' table: {e}")
-
-    conn.close()
-
 # ✅ Define Offense-Defense stat pairs
 STAT_PAIRS = {
     "AdjOE": "AdjDE",
