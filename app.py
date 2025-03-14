@@ -63,7 +63,7 @@ for stat, value in filters.items():
 
     print("Executing SQL Query:", query)  # Debugging Output
 
-    try:
+try:
     print("Executing SQL Query:", query)  # Debugging Output
     df = pd.read_sql(query, conn)
 except Exception as e:
