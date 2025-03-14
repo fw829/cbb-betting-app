@@ -72,7 +72,9 @@ for stat in ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "ARate", "AdjTempo"]:
 for off_stat, def_stat in STAT_PAIRS.items():
     enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_{off_stat}")
     if enable_pair:
-        paired_filters[def_stat] = st.sidebar.slider(f"{def_stat} Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_{def_stat}")
+        paired_filters[def_stat] = st.sidebar.slider(
+            f"{def_stat} (Opponent) Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_opponent_{def_stat}"
+        
 
 # ✅ Load Data With Filters
 df = get_data(filters, paired_filters)
