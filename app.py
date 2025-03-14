@@ -132,14 +132,15 @@ for stat, default_range in FILTER_DEFAULTS.items():
         f"{stat} Range", default_range[0], default_range[1], default_range, key=f"slider_{stat}_team"
     )  # ✅ Adding '_team' ensures unique keys
 
-# ✅ Opponent Filters (Only appear if enabled)
+# ✅ Opponent Filters - Only appear if enabled
 for i, (off_stat, def_stat) in enumerate(STAT_PAIRS.items()):
     enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_pair_{i}")
     if enable_pair:
-        slider_key = f"slider_{def_stat}_opponent"  # ✅ Ensure uniqueness
-            f"{def_stat} (Opponent) Range", FILTER_DEFAULTS[def_stat][0], FILTER_DEFAULTS[def_stat][1], FILTER_DEFAULTS[def_stat], key=slider_key
-        )
-
+        paired_filters[def_stat] = st.sidebar.slider(
+            f"{def_stat} (Opponent) Range",
+            FILTER_DEFAULTS[def_stat][0], FILTER_DEFAULTS[def_stat][1],
+            FILTER_DEFAULTS[def_stat], key=f"slider_{def_stat}_opponent"
+        )  # Make sure this closing parenthesis aligns properly!
 # ✅ Load Data With Filters
 df = get_data(filters, paired_filters)
 
