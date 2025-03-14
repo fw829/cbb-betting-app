@@ -64,18 +64,20 @@ paired_filters = {}
 
 st.sidebar.header("Filter Options")
 
+import sys  # ✅ Import sys to manually flush output
+
 # Standard Filters (Team Stats)
 for stat in ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "ARate", "AdjTempo"]:
     slider_key = f"slider_{stat}"
-    print(f"Creating Team Stat Slider: {stat}, Key: {slider_key}")  # Debugging Output
+    print(f"Creating Team Stat Slider: {stat}, Key: {slider_key}", flush=True)  # ✅ Force print to appear
     filters[stat] = st.sidebar.slider(f"{stat} Range", 50.0, 150.0, (90.0, 110.0), key=slider_key)
 
 # Paired Filters (Opponent Stats)
 for i, (off_stat, def_stat) in enumerate(STAT_PAIRS.items()):
     enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_pair_{i}")
     if enable_pair:
-        slider_key = f"slider_opponent_{i}_{def_stat}"  # ✅ Ensure uniqueness
-        print(f"Creating Opponent Stat Slider: {def_stat}, Key: {slider_key}")  # Debugging Output
+        slider_key = f"slider_opponent_{i}_{off_stat}_{def_stat}"  # ✅ Ensure uniqueness
+        print(f"Creating Opponent Stat Slider: {def_stat}, Key: {slider_key}", flush=True)  # ✅ Force print
         paired_filters[def_stat] = st.sidebar.slider(
             f"{def_stat} (Opponent) Range", 50.0, 150.0, (90.0, 110.0), key=slider_key
         )
