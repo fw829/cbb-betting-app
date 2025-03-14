@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import os
 
 # ✅ Database Path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
@@ -12,6 +13,11 @@ STAT_PAIRS = {
     "FG3Pct": "OppFG3Pct",
     "ARate": "OppARate"
 }
+
+# ✅ Check if database exists
+if not os.path.exists(DB_PATH):
+    st.error("❌ Database file NOT FOUND. Ensure it's in the correct location.")
+    st.stop()
 
 # ✅ Load data from the database
 @st.cache_data
@@ -41,13 +47,13 @@ def get_data(filters, paired_filters):
     if conditions:
         query += " AND " + " AND ".join(conditions)
 
-    print("Executing SQL Query:", query)  # Debugging Output
+    print("🔎 Executing SQL Query:", query)  # Debugging Output
 
     try:
         df = pd.read_sql(query, conn)
     except Exception as e:
         st.error(f"🚨 SQL Query Failed: {e}")
-        st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
+        st.write(f"🔎 Query that caused the error: ```{query}```")  # Show query in Streamlit UI
         df = pd.DataFrame()  # Return an empty DataFrame on failure
     finally:
         conn.close()
@@ -58,37 +64,37 @@ def get_data(filters, paired_filters):
 # ✅ Streamlit UI
 st.title("College Basketball Betting Analysis")
 
-# ✅ Create Sliders for Filtering
+# ✅ Sidebar Header
+st.sidebar.header("Filter Options")
+
+# ✅ Define reasonable default ranges for filters
+FILTER_DEFAULTS = {
+    "AdjOE": (80.0, 120.0),
+    "AdjDE": (85.0, 115.0),
+    "FG2Pct": (40.0, 65.0),
+    "FG3Pct": (25.0, 45.0),
+    "ARate": (10.0, 30.0),
+    "AdjTempo": (50.0, 80.0),
+}
+
+# ✅ Initialize Filters
 filters = {}
 paired_filters = {}
 
-st.sidebar.header("Filter Options")
-
-import sys  # ✅ Import sys to manually flush output
-
-# Debugging to check how many times sliders are created
-if "slider_count" not in st.session_state:
-    st.session_state["slider_count"] = 0
-st.session_state["slider_count"] += 1
-print(f"🔥 Slider creation run: {st.session_state['slider_count']}", flush=True)
-
-# Standard Filters (Team Stats)
-filters = {}  # ✅ Ensure filters is initialized
-for stat in ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "ARate", "AdjTempo"]:
+# ✅ Standard Filters (Team Stats)
+for stat, default_range in FILTER_DEFAULTS.items():
     slider_key = f"slider_{stat}"
-    print(f"Creating Team Stat Slider: {stat}, Key: {slider_key}", flush=True)  # ✅ Debugging output
-    filters[stat] = st.sidebar.slider(f"{stat} Range", 50.0, 150.0, (90.0, 110.0), key=slider_key)
+    filters[stat] = st.sidebar.slider(f"{stat} Range", default_range[0], default_range[1], default_range, key=slider_key)
 
-# Paired Filters (Opponent Stats)
-paired_filters = {}  # ✅ Ensure paired filters is initialized
+# ✅ Opponent Filters (Only appear if enabled)
 for i, (off_stat, def_stat) in enumerate(STAT_PAIRS.items()):
     enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_pair_{i}")
     if enable_pair:
-        slider_key = f"slider_opponent_{i}_{off_stat}_{def_stat}"  # ✅ Ensure uniqueness
-        print(f"Creating Opponent Stat Slider: {def_stat}, Key: {slider_key}", flush=True)  # ✅ Debugging output
+        slider_key = f"slider_{def_stat}_opponent"  # ✅ Ensure uniqueness
         paired_filters[def_stat] = st.sidebar.slider(
-            f"{def_stat} (Opponent) Range", 50.0, 150.0, (90.0, 110.0), key=slider_key
+            f"{def_stat} (Opponent) Range", FILTER_DEFAULTS[off_stat][0], FILTER_DEFAULTS[off_stat][1], FILTER_DEFAULTS[off_stat], key=slider_key
         )
+
 # ✅ Load Data With Filters
 df = get_data(filters, paired_filters)
 
