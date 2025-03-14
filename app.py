@@ -3,47 +3,47 @@ import sqlite3
 import pandas as pd
 import os
 
+# Display current working directory and files
 st.write("Current working directory:", os.getcwd())
 st.write("Files in this directory:", os.listdir(os.getcwd()))
 
 # ✅ Force Streamlit to use the correct database path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
-
-# ✅ Force Streamlit to open a fresh database connection
+# ✅ Function to open a fresh database connection
 def get_db_connection():
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
-try:
-    conn = get_db_connection()
-    cursor = conn.cursor()
+# ✅ Function to check for tables and columns
+def check_database():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    # ✅ Explicitly check tables
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [table[0] for table in cursor.fetchall()]
-    st.write("🔎 Tables in Database:", tables)
+        # Check tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [table[0] for table in cursor.fetchall()]
+        st.write("🔎 Tables in Database:", tables)
 
-    if "games" in tables:
-        cursor.execute("SELECT COUNT(*) FROM games;")
-        row_count = cursor.fetchone()[0]
-        st.success(f"✅ 'games' table found with {row_count} rows!")
-    else:
-        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
+        if "games" in tables:
+            cursor.execute("SELECT COUNT(*) FROM games;")
+            row_count = cursor.fetchone()[0]
+            st.success(f"✅ 'games' table found with {row_count} rows!")
+        else:
+            st.error("❌ ERROR: 'games' table does NOT exist in the database!")
 
-# ✅ Step 2: Debugging - Show Available Columns in 'games' Table
-try:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("PRAGMA table_info(games);")
-    columns = [col[1] for col in cursor.fetchall()]
-    
-    st.write("🔎 Columns in 'games' table:", columns)
+        # Show available columns in 'games' table
+        cursor.execute("PRAGMA table_info(games);")
+        columns = [col[1] for col in cursor.fetchall()]
+        st.write("🔎 Columns in 'games' table:", columns)
 
-except Exception as e:
-    st.error(f"❌ ERROR: Could not retrieve columns from 'games' table: {e}")
+    except Exception as e:
+        st.error(f"❌ ERROR: {e}")
+    finally:
+        conn.close()
 
-    conn.close()
+# Check the database
+check_database()
 
 # ✅ Define Offense-Defense stat pairs
 STAT_PAIRS = {
