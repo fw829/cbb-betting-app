@@ -3,16 +3,11 @@ import sqlite3
 import pandas as pd
 import os
 
+st.write("Current working directory:", os.getcwd())
+st.write("Files in this directory:", os.listdir(os.getcwd()))
+
 # ✅ Force Streamlit to use the correct database path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
-
-# ✅ Debugging: Check if the database file exists and is accessible
-if not os.path.exists(DB_PATH):
-    st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
-    st.stop()
-else:
-    file_size = os.path.getsize(DB_PATH)  # Get database size in bytes
-    st.success(f"✅ Database found at: {DB_PATH} (Size: {file_size} bytes)")
 
 # ✅ Force Streamlit to open a fresh database connection
 def get_db_connection():
@@ -80,6 +75,11 @@ def get_data(filters, paired_filters):
 
     try:
         df = pd.read_sql(query, conn)
+
+# Debugging: Check if data was returned
+print(f"🔎 Filtered DataFrame shape: {df.shape}")  
+print(df.head())  
+
     except Exception as e:
         st.error(f"🚨 SQL Query Failed: {e}")
         st.write(f"🔎 Query that caused the error: ```{query}```")  # Show query in Streamlit UI
