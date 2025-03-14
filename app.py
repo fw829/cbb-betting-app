@@ -105,15 +105,15 @@ for stat, value in filters.items():
     print("Executing SQL Query:", query)  # Debugging Output
 
 try:
-    print("Executing SQL Query:", query)  # Debugging Output
-   
+    df = pd.read_sql(query, conn)  # ✅ Executes query
 except Exception as e:
     st.error(f"🚨 SQL Query Failed: {e}")
-    st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
-    df = pd.DataFrame()  # Return an empty DataFrame on failure
+    st.write(f"🔎 Query that caused the error: {query}")  # Debugging info
+    df = pd.DataFrame()  # ✅ Returns empty DataFrame on failure
+finally:
+    conn.close()  # ✅ Ensures database connection is closed
 
-    conn.close()
-    return df
+return df  # ✅ Always returns df at the function level
 
 # Streamlit UI
 st.title("College Basketball Betting Analysis")
