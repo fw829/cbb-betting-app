@@ -21,7 +21,7 @@ def get_data(filters, paired_filters):
     # ✅ Base Query
     query = """
         SELECT g1.GAME_ID, g1.TEAM, g1.AdjOE, g1.AdjDE, g1.FG2Pct, g1.FG3Pct, g1.ARate, g1.AdjTempo,
-               g2.TEAM AS Opponent, g2.AdjDE, g2.OppFG2Pct, g2.OppFG3Pct, g2.OppARate
+               g2.TEAM AS Opponent, g2.AdjDE AS OppAdjDE, g2.FG2Pct AS OppFG2Pct, g2.FG3Pct AS OppFG3Pct, g2.ARate AS OppARate
         FROM games g1
         JOIN games g2 ON g1.GAME_ID = g2.GAME_ID
         WHERE g1.TEAM <> g2.TEAM
