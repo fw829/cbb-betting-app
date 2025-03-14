@@ -3,28 +3,18 @@ import pandas as pd
 import sqlite3
 import os
 
-conn = get_db_connection()
-if conn:
-    try:
-        df_test = pd.read_sql("SELECT * FROM games LIMIT 5;", conn)
-        st.write("✅ Test query successful!", df_test)
-    except Exception as e:
-        st.error(f"❌ Test query failed: {e}")
-    finally:
-        conn.close()
-
 # Debugging: Show working directory & confirm DB path
 st.write("📂 Current working directory:", os.getcwd())
 
 # Ensure database path is absolute
-DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
+DB_PATH = "C:/Users/Frank W/OneDrive/Desktop/College Basketball Wagering/Database/basketball_data.db"
 st.write(f"🔍 Checking database path: {DB_PATH}")
 
 # Ensure the file exists before attempting to connect
 if not os.path.exists(DB_PATH):
     st.error(f"❌ ERROR: Database file NOT FOUND at: {DB_PATH}")
 
-# Function to connect to the database
+# ✅ Function to connect to the database
 def get_db_connection():
     try:
         if not os.path.exists(DB_PATH):
@@ -37,6 +27,16 @@ def get_db_connection():
     except Exception as e:
         st.error(f"❌ Database Connection Failed: {e}")
         return None
+
+# ✅ Manual Test: Confirm database connection and table access
+conn_test = get_db_connection()
+if conn_test:
+    try:
+        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table';", conn_test)
+        st.write("📌 Tables in Database:", tables)
+        conn_test.close()
+    except Exception as e:
+        st.error(f"🚨 Table Check Failed: {e}")
 
 # Define stat pairs for Offense vs Defense comparison
 STAT_PAIRS = {
@@ -62,7 +62,7 @@ for off_stat, def_stat in STAT_PAIRS.items():
     if enable_pair:
         paired_filters[def_stat] = st.sidebar.slider(f"{def_stat} Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_{def_stat}")
 
-# Function to load data based on filters
+# ✅ Function to load data based on filters
 def get_data(filters, paired_filters):
     conn = get_db_connection()
     if conn is None:
@@ -91,7 +91,7 @@ def get_data(filters, paired_filters):
         st.code(query, language="sql")
         return pd.DataFrame()
 
-# Load data
+# ✅ Load data
 st.write("### Filtered Data View")
 df = get_data(filters, paired_filters)
 st.dataframe(df)
