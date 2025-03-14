@@ -9,6 +9,7 @@ st.write("Files in this directory:", os.listdir(os.getcwd()))
 # ✅ Force Streamlit to use the correct database path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
+
 # ✅ Force Streamlit to open a fresh database connection
 def get_db_connection():
     return sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -28,6 +29,22 @@ try:
         st.success(f"✅ 'games' table found with {row_count} rows!")
     else:
         st.error("❌ ERROR: 'games' table does NOT exist in the database!")
+
+# ✅ Step 2: Debugging - Show Available Columns in 'games' Table
+try:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("PRAGMA table_info(games);")
+    columns = [col[1] for col in cursor.fetchall()]
+    
+    st.write("🔎 Columns in 'games' table:", columns)
+
+    conn.close()
+
+except Exception as e:
+    st.error(f"❌ ERROR: Could not retrieve columns from 'games' table: {e}")
+
 
     conn.close()
 
@@ -75,11 +92,6 @@ def get_data(filters, paired_filters):
 
     try:
         df = pd.read_sql(query, conn)
-
-# Debugging: Check if data was returned
-print(f"🔎 Filtered DataFrame shape: {df.shape}")  
-print(df.head())  
-
     except Exception as e:
         st.error(f"🚨 SQL Query Failed: {e}")
         st.write(f"🔎 Query that caused the error: ```{query}```")  # Show query in Streamlit UI
