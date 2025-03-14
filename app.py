@@ -1,11 +1,22 @@
-import streamlit as st
-
-# Force clear cache
-st.cache_data.clear()
-
+import os
 import sqlite3
-import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
+
+# Set the correct database path
+db_path = os.path.join(os.getcwd(), "basketball_data.db")
+
+# Debugging: Print the database path
+if not os.path.exists(db_path):
+    st.error(f"🚨 Database file not found at: {db_path}")
+else:
+    st.write(f"✅ Connected to database: {db_path}")
+
+# Now, create the connection
+conn = sqlite3.connect(db_path)
+cursor = conn.cursor()
+
+
 
 # Define available stat pairs for Offense vs. Defense comparisons
 stat_pairs = {
@@ -43,17 +54,22 @@ def get_data(compare_vs_opponent, selected_stat, filters):
         """
 
     # Apply additional filters
-    for stat, value in filters.items():
-        if value is not None:
+for stat, value in filters.items():
+    if value is not None:
+        if compare_vs_opponent:
             query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
+        else:
+            query += f" AND {stat} BETWEEN {value[0]} AND {value[1]}"
 
     print("Executing SQL Query:", query)  # Debugging Output
 
     try:
-        df = pd.read_sql(query, conn)
-    except Exception as e:
-        st.error(f"SQL Query Failed: {e}")
-        df = pd.DataFrame()  # Return an empty DataFrame if error occurs
+    print("Executing SQL Query:", query)  # Debugging Output
+    df = pd.read_sql(query, conn)
+except Exception as e:
+    st.error(f"🚨 SQL Query Failed: {e}")
+    st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
+    df = pd.DataFrame()  # Return an empty DataFrame on failure
 
     conn.close()
     return df
