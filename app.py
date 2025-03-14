@@ -40,17 +40,10 @@ try:
     
     st.write("🔎 Columns in 'games' table:", columns)
 
-    conn.close()
-
 except Exception as e:
     st.error(f"❌ ERROR: Could not retrieve columns from 'games' table: {e}")
 
-
     conn.close()
-
-except Exception as e:
-    st.error(f"❌ Database Connection Error: {e}")
-    st.stop()
 
 # ✅ Define Offense-Defense stat pairs
 STAT_PAIRS = {
