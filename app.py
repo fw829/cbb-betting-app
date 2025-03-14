@@ -1,50 +1,24 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
+import sqlite3
 import os
 
-st.write("Current working directory:", os.getcwd()
-st.write("Files in this directory:", os.listdir(os.getcwd())
+# Display current working directory for debugging
+st.write("Current working directory:", os.getcwd())
 
-# ✅ Force Streamlit to use the correct database path
-DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
-
-
-# ✅ Force Streamlit to open a fresh database connection
+# Define database connection function
 def get_db_connection():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
-
     try:
-    conn = get_db_connection()
-    cursor = conn.cursor()
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        return conn
+    except Exception as e:
+        st.error(f"❌ Database Connection Failed: {e}")
+        return None
 
-    # ✅ Explicitly check tables
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [table[0] for table in cursor.fetchall()]
-    st.write("🔎 Tables in Database:", tables)
+# Set database path
+DB_PATH = r"C:\\Users\\Frank W\\OneDrive\\Desktop\\College Basketball Wagering\\Database\\basketball_data.db"
 
-    if "games" in tables:
-        cursor.execute("SELECT COUNT(*) FROM games;")
-        row_count = cursor.fetchone()[0]
-        st.success(f"✅ 'games' table found with {row_count} rows!")
-    else:
-        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
-
-    # ✅ Step 2: Debugging - Show Available Columns in 'games' Table
-    try:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("PRAGMA table_info(games);")
-    columns = [col[1] for col in cursor.fetchall()]
-    
-    st.write("🔎 Columns in 'games' table:", columns)
-
-except Exception as e:
-    st.error(f"❌ ERROR: Could not retrieve columns from 'games' table: {e}")
-    conn.close()
-
-# ✅ Define Offense-Defense stat pairs
+# Define stat pairs for Offense vs Defense comparison
 STAT_PAIRS = {
     "AdjOE": "AdjDE",
     "FG2Pct": "OppFG2Pct",
@@ -52,12 +26,28 @@ STAT_PAIRS = {
     "ARate": "OppARate"
 }
 
-# ✅ Load data from the database
-@st.cache_data
-def get_data(filters, paired_filters):
-    conn = sqlite3.connect(DB_PATH)
+# Sidebar filters
+filters = {}
+paired_filters = {}
 
-    # ✅ Base Query
+# Standard Filters (Team Stats)
+st.sidebar.header("Filter Team Stats")
+for stat in ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "ARate", "AdjTempo"]:
+    filters[stat] = st.sidebar.slider(f"{stat} Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_{stat}")
+
+# Paired Filters (Opponent Stats)
+st.sidebar.header("Opponent Comparison")
+for off_stat, def_stat in STAT_PAIRS.items():
+    enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_{off_stat}")
+    if enable_pair:
+        paired_filters[def_stat] = st.sidebar.slider(f"{def_stat} Range", 50.0, 150.0, (90.0, 110.0), key=f"slider_{def_stat}")
+
+# Function to load data based on filters
+def get_data(filters, paired_filters):
+    conn = get_db_connection()
+    if conn is None:
+        return pd.DataFrame()
+    
     query = """
         SELECT g1.GAME_ID, g1.TEAM, g1.AdjOE, g1.AdjDE, g1.FG2Pct, g1.FG3Pct, g1.ARate, g1.AdjTempo,
                g2.TEAM AS Opponent, g2.AdjDE AS OppAdjDE, g2.FG2Pct AS OppFG2Pct, g2.FG3Pct AS OppFG3Pct, g2.ARate AS OppARate
@@ -66,76 +56,22 @@ def get_data(filters, paired_filters):
         WHERE g1.TEAM <> g2.TEAM
     """
 
-    # ✅ Apply Filters (Standard Sliders)
-    conditions = []
+    # Apply filters dynamically
     for stat, value in filters.items():
-        conditions.append(f"g1.{stat} BETWEEN {value[0]} AND {value[1]}")
-
-    # ✅ Apply Opponent Filters (If Enabled)
+        query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
     for stat, value in paired_filters.items():
-        if stat in ["AdjDE", "OppFG2Pct", "OppFG3Pct", "OppARate"]:  # Ensure the column exists
-            conditions.append(f"g2.{stat} BETWEEN {value[0]} AND {value[1]}")
-
-    # ✅ Add Conditions to SQL Query
-    if conditions:
-        query += " AND " + " AND ".join(conditions)
-
-    print("🔎 Executing SQL Query:", query)  # Debugging Output
-
+        query += f" AND g2.{stat} BETWEEN {value[0]} AND {value[1]}"
+    
     try:
         df = pd.read_sql(query, conn)
+        conn.close()
+        return df
     except Exception as e:
         st.error(f"🚨 SQL Query Failed: {e}")
-        st.write(f"🔎 Query that caused the error: ```{query}```")  # Show query in Streamlit UI
-        df = pd.DataFrame()  # Return an empty DataFrame on failure
-    finally:
-        conn.close()
+        st.write(f"🔎 Query that caused the error: {query}")
+        return pd.DataFrame()
 
-    return df
-
-
-# ✅ Streamlit UI
-st.title("College Basketball Betting Analysis")
-
-# ✅ Sidebar Header
-st.sidebar.header("Filter Options")
-
-# ✅ Define reasonable default ranges for filters
-FILTER_DEFAULTS = {
-    "AdjOE": (80.0, 120.0),
-    "AdjDE": (85.0, 115.0),
-    "FG2Pct": (40.0, 65.0),
-    "FG3Pct": (25.0, 45.0),
-    "ARate": (10.0, 30.0),
-    "AdjTempo": (50.0, 80.0),
-}
-
-# ✅ Initialize Filters
-filters = {}
-paired_filters = {}
-
-# ✅ Standard Filters (Team Stats)
-for stat, default_range in FILTER_DEFAULTS.items():
-    slider_key = f"slider_{stat}"
-    filters[stat] = st.sidebar.slider(f"{stat} Range", default_range[0], default_range[1], default_range, key=slider_key)
-
-# ✅ Opponent Filters (Only appear if enabled)
-for i, (off_stat, def_stat) in enumerate(STAT_PAIRS.items():
-    enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter", key=f"checkbox_pair_{i}")
-    if enable_pair:
-        slider_key = f"slider_{def_stat}_opponent"  # ✅ Ensure uniqueness
-        paired_filters[def_stat] = st.sidebar.slider(
-            f"{def_stat} (Opponent) Range", FILTER_DEFAULTS[off_stat][0], FILTER_DEFAULTS[off_stat][1], FILTER_DEFAULTS[off_stat], key=slider_key
-        )
-
-# ✅ Load Data With Filters
+# Load data
+st.write("### Filtered Data View")
 df = get_data(filters, paired_filters)
-
-# ✅ Display Data
-st.write("### Filtered Data")
 st.dataframe(df)
-
-# ✅ Visualization (Example: AdjOE vs. OppAdjDE)
-if not df.empty:
-    st.write("### Visualization: AdjOE vs. OppAdjDE")
-    st.scatter_chart(df[["AdjOE", "OppAdjDE"]])
