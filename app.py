@@ -23,31 +23,38 @@ filterable_stats = ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "OppFG2Pct", "OppFG3Pc
 def get_data(compare_vs_opponent, selected_stat, filters):
     conn = sqlite3.connect("basketball_data.db")
 
-    # Base query for solo stats
-    if not compare_vs_opponent:
+    # Determine if selected_stat has a defensive pair
+    opponent_stat = stat_pairs.get(selected_stat, None)
+
+    if not compare_vs_opponent or opponent_stat is None:
         query = f"""
             SELECT GAME_ID, TEAM, {selected_stat}, CLOSING_SPREAD, Covered_Spread
             FROM games
             WHERE 1=1
         """
     else:
-        # If comparing Offense vs. Defense, use stat pairs
-        opponent_stat = stat_pairs.get(selected_stat, selected_stat)
         query = f"""
             SELECT g1.GAME_ID, g1.TEAM, g1.{selected_stat} AS Team_Stat, 
                    g2.TEAM AS Opponent, g2.{opponent_stat} AS Opponent_Stat,
                    g1.CLOSING_SPREAD, g1.Covered_Spread
             FROM games g1
-            JOIN games g2 ON g1.GAME_ID = g2.GAME_ID AND g1.TEAM <> g2.TEAM
-            WHERE 1=1
+            JOIN games g2 ON g1.GAME_ID = g2.GAME_ID 
+            WHERE g1.TEAM <> g2.TEAM
         """
 
     # Apply additional filters
     for stat, value in filters.items():
         if value is not None:
-            query += f" AND {stat} BETWEEN {value[0]} AND {value[1]}"
+            query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
 
-    df = pd.read_sql(query, conn)
+    print("Executing SQL Query:", query)  # Debugging Output
+
+    try:
+        df = pd.read_sql(query, conn)
+    except Exception as e:
+        st.error(f"SQL Query Failed: {e}")
+        df = pd.DataFrame()  # Return an empty DataFrame if error occurs
+
     conn.close()
     return df
 
