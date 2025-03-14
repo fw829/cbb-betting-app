@@ -6,6 +6,35 @@ import os
 # ✅ Database Path
 DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
+# ✅ Database Path (Ensure it's correct)
+DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
+
+# ✅ Check if the database file exists
+if not os.path.exists(DB_PATH):
+    st.error(f"❌ Database file NOT FOUND at: {DB_PATH}")
+    st.stop()
+else:
+    st.success(f"✅ Database found at: {DB_PATH}")
+
+# ✅ Verify the connection inside Streamlit
+try:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = [table[0] for table in cursor.fetchall()]
+    conn.close()
+
+    st.write("🔎 Tables in Database:", tables)
+    if "games" not in tables:
+        st.error("❌ ERROR: 'games' table does NOT exist in the database!")
+        st.stop()
+    else:
+        st.success("✅ 'games' table found in the database!")
+
+except Exception as e:
+    st.error(f"❌ Database Connection Error: {e}")
+    st.stop()
+
 # ✅ Define Offense-Defense stat pairs
 STAT_PAIRS = {
     "AdjOE": "AdjDE",
@@ -13,11 +42,6 @@ STAT_PAIRS = {
     "FG3Pct": "OppFG3Pct",
     "ARate": "OppARate"
 }
-
-# ✅ Check if database exists
-if not os.path.exists(DB_PATH):
-    st.error("❌ Database file NOT FOUND. Ensure it's in the correct location.")
-    st.stop()
 
 # ✅ Load data from the database
 @st.cache_data
