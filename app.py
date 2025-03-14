@@ -1,150 +1,77 @@
-import os
-import sqlite3
 import streamlit as st
-import matplotlib.pyplot as plt
+import sqlite3
+import pandas as pd
 
-# Set the correct database path
-db_path = os.path.join(os.getcwd(), "basketball_data.db")
+# ✅ Database Path
+DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
-# Debugging: Print the database path
-if not os.path.exists(db_path):
-    st.error(f"🚨 Database file not found at: {db_path}")
-else:
-    st.write(f"✅ Connected to database: {db_path}")
-
-# Now, create the connection
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
-
-
-
-# Define available stat pairs for Offense vs. Defense comparisons
-stat_pairs = {
+# ✅ Define Offense-Defense stat pairs
+STAT_PAIRS = {
     "AdjOE": "AdjDE",
     "FG2Pct": "OppFG2Pct",
     "FG3Pct": "OppFG3Pct",
     "ARate": "OppARate"
 }
 
-# Define stats that should be filterable even if not part of a pair
-filterable_stats = ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "OppFG2Pct", "OppFG3Pct"]
-
-# Function to fetch data with or without Offense-Defense comparisons
+# ✅ Load data from the database
 @st.cache_data
-def get_data(compare_vs_opponent, selected_stat, filters):
-    conn = sqlite3.connect(db_path)
+def get_data(filters, paired_filters):
+    conn = sqlite3.connect(DB_PATH)
 
-    # Determine if selected_stat has a defensive pair
-    opponent_stat = stat_pairs.get(selected_stat, None)
+    # ✅ Base Query
+    query = """
+        SELECT g1.GAME_ID, g1.TEAM, g1.AdjOE, g1.AdjDE, g1.FG2Pct, g1.FG3Pct, g1.ARate, g1.AdjTempo,
+               g2.TEAM AS Opponent, g2.AdjDE AS OppAdjDE, g2.OppFG2Pct, g2.OppFG3Pct, g2.OppARate
+        FROM games g1
+        JOIN games g2 ON g1.GAME_ID = g2.GAME_ID
+        WHERE g1.TEAM <> g2.TEAM
+    """
 
-    if not compare_vs_opponent or opponent_stat is None:
-        query = f"""
-            SELECT GAME_ID, TEAM, {selected_stat}, CLOSING_SPREAD, Covered_Spread
-            FROM games
-            WHERE 1=1
-        """
-    else:
-        query = f"""
-            SELECT g1.GAME_ID, g1.TEAM, g1.{selected_stat} AS Team_Stat, 
-                   g2.TEAM AS Opponent, g2.{opponent_stat} AS Opponent_Stat,
-                   g1.CLOSING_SPREAD, g1.Covered_Spread
-            FROM games g1
-            JOIN games g2 ON g1.GAME_ID = g2.GAME_ID 
-            WHERE g1.TEAM <> g2.TEAM
-        """
-
-    # ✅ FIX: Filters are now inside `get_data()`
+    # ✅ Apply Filters (Standard Sliders)
+    conditions = []
     for stat, value in filters.items():
-        if value is not None:
-            if compare_vs_opponent:
-                query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
-            else:
-                query += f" AND {stat} BETWEEN {value[0]} AND {value[1]}"
+        conditions.append(f"g1.{stat} BETWEEN {value[0]} AND {value[1]}")
 
-    # Debugging Output: Print the final SQL query
-    print("Executing SQL Query:", query)
+    # ✅ Apply Opponent Filters (If Enabled)
+    for stat, value in paired_filters.items():
+        conditions.append(f"g2.{stat} BETWEEN {value[0]} AND {value[1]}")
 
-    try:
-        df = pd.read_sql(query, conn)
-    except Exception as e:
-        st.error(f"🚨 SQL Query Failed: {e}")
-        st.write(f"🔎 Query that caused the error: {query}")  # Show query in Streamlit UI
-        df = pd.DataFrame()  # Return an empty DataFrame on failure
-    finally:
-        conn.close()  # Ensure the database connection is closed
+    # ✅ Add Conditions to SQL Query
+    if conditions:
+        query += " AND " + " AND ".join(conditions)
 
-    return df  # ✅ Now correctly inside the function
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df
 
- # Determine if selected_stat has a defensive pair
-    opponent_stat = stat_pairs.get(selected_stat, None)
-
-    if not compare_vs_opponent or opponent_stat is None:
-        query = f"""
-            SELECT GAME_ID, TEAM, {selected_stat}, CLOSING_SPREAD, Covered_Spread
-            FROM games
-            WHERE 1=1
-        """
-    else:
-        query = f"""
-            SELECT g1.GAME_ID, g1.TEAM, g1.{selected_stat} AS Team_Stat, 
-                   g2.TEAM AS Opponent, g2.{opponent_stat} AS Opponent_Stat,
-                   g1.CLOSING_SPREAD, g1.Covered_Spread
-            FROM games g1
-            JOIN games g2 ON g1.GAME_ID = g2.GAME_ID 
-            WHERE g1.TEAM <> g2.TEAM
-        """
-
-    # Apply additional filters
-for stat, value in filters.items():
-    if value is not None:
-        if compare_vs_opponent:
-            query += f" AND g1.{stat} BETWEEN {value[0]} AND {value[1]}"
-        else:
-            query += f" AND {stat} BETWEEN {value[0]} AND {value[1]}"
-
-    print("Executing SQL Query:", query)  # Debugging Output
-
-try:
-    df = pd.read_sql(query, conn)  # ✅ Executes query
-except Exception as e:
-    st.error(f"🚨 SQL Query Failed: {e}")
-    st.write(f"🔎 Query that caused the error: {query}")  # Debugging info
-    df = pd.DataFrame()  # ✅ Returns empty DataFrame on failure
-finally:
-    conn.close()  # ✅ Ensures database connection is closed
-
-return df  # ✅ Always returns df at the function level
-
-# Streamlit UI
+# ✅ Streamlit UI
 st.title("College Basketball Betting Analysis")
 
-# Toggle for Offense vs. Defense Comparison
-compare_vs_opponent = st.checkbox("Compare with Opponent's Defense?")
-
-# Select the stat to analyze
-selected_stat = st.selectbox("Select a Stat to Analyze", list(stat_pairs.keys()) + filterable_stats)
-
-# Sliders for additional filters (only applied if the stat is in filterable_stats)
+# ✅ Create Sliders for Filtering
 filters = {}
-for stat in filterable_stats:
-    if stat != selected_stat:
-        filters[stat] = st.slider(f"Filter {stat}", 0.0, 100.0, (0.0, 100.0))
+paired_filters = {}
 
-# Fetch Data
-df = get_data(compare_vs_opponent, selected_stat, filters)
+st.sidebar.header("Filter Options")
 
-# Visualization
+# ✅ Standard Filters
+for stat in ["AdjOE", "AdjDE", "FG2Pct", "FG3Pct", "ARate", "AdjTempo"]:
+    filters[stat] = st.sidebar.slider(f"{stat} Range", 50.0, 150.0, (90.0, 110.0))
+
+# ✅ Paired Offense-Defense Filters (With Checkbox)
+st.sidebar.header("Opponent Matchup Filters")
+for off_stat, def_stat in STAT_PAIRS.items():
+    enable_pair = st.sidebar.checkbox(f"Enable {off_stat} vs. {def_stat} Filter")
+    if enable_pair:
+        paired_filters[def_stat] = st.sidebar.slider(f"{def_stat} Range", 50.0, 150.0, (90.0, 110.0))
+
+# ✅ Load Data With Filters
+df = get_data(filters, paired_filters)
+
+# ✅ Display Data
+st.write("### Filtered Data")
+st.dataframe(df)
+
+# ✅ Visualization (Example: AdjOE vs. OppAdjDE)
 if not df.empty:
-    if compare_vs_opponent and selected_stat in stat_pairs:
-        st.write(f"### {selected_stat} vs. Opponent's {stat_pairs[selected_stat]}")
-        fig, ax = plt.subplots()
-        ax.scatter(df["Team_Stat"], df["Opponent_Stat"])
-        ax.set_xlabel(f"Team {selected_stat}")
-        ax.set_ylabel(f"Opponent {stat_pairs[selected_stat]}")
-        ax.set_title(f"{selected_stat} vs. Opponent Defense")
-        st.pyplot(fig)
-    else:
-        st.write(f"### Distribution of {selected_stat}")
-        st.bar_chart(df[selected_stat])
-else:
-    st.write("No data found for the selected filters.")
+    st.write("### Visualization: AdjOE vs. OppAdjDE")
+    st.scatter_chart(df[["AdjOE", "OppAdjDE"]])
