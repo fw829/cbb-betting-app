@@ -4,7 +4,7 @@ import pandas as pd
 import os
 
 # ✅ Force Streamlit to use the correct database path
-DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\fixed_basketball_data.db"
+DB_PATH = r"C:\Users\Frank W\OneDrive\Desktop\College Basketball Wagering\Database\basketball_data.db"
 
 # ✅ Debugging: Check if the database file exists and is accessible
 if not os.path.exists(DB_PATH):
